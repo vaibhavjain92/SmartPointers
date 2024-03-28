@@ -1,0 +1,96 @@
+class ReferenceCount
+{
+    int count = 0;
+public:
+    void addRef()
+    {
+        count++;
+    }
+    
+    int release()
+    {
+        return --count;
+    }
+
+    int getCount()
+    {
+        return count;
+    }
+};
+
+template <typename T>
+class SmartPointer
+{
+    T* data;
+    ReferenceCount* ref;
+
+public: 
+    SmartPointer(): data(0)
+    {
+        ref = new ReferenceCount();
+        ref->addRef();
+    }
+
+    SmartPointer(T* i_data): data(i_data)
+    {
+        ref = new ReferenceCount();
+        ref->addRef();
+    }
+
+    ~SmartPointer()
+    {
+        if (ref->release() == 0)
+        {
+            delete data;
+            delete ref;
+        }
+    }
+
+    SmartPointer(const SmartPointer<T>& sp): data(sp.data), ref(sp.ref)
+    {
+        ref->addRef();
+    }
+
+    SmartPointer<T>& operator= (const SmartPointer<T>& sp)
+    {
+        if (this != &sp)
+        {
+            if (ref->release() == 0)
+            {
+                delete data;
+                delete ref;
+            }
+
+            data = sp.data;
+            ref = sp.ref;
+            ref->addRef();
+        }
+
+        return *this;
+    }
+
+    T* operator-> () const
+    {
+        return data;
+    }
+
+    T& operator* () const
+    {
+        return *data;
+    }
+
+    const int getCount() const
+    {
+        return ref->getCount();
+    }
+};
+
+int main
+{
+    SmartPointer<int> p(new int(5));
+    SmartPointer<int> r(p);
+    SmartPointer<int> q(r);
+    q = p;
+
+    return 0;
+}
